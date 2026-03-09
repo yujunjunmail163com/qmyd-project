@@ -18,10 +18,29 @@ export default {
   components: {},
   data() {
     return {
-      fileName: ''
+      fileName: '',
+      wirelessData: [] // 解析后的「无线通讯」数据（对象数组）
     }
   },
   methods: {
+    /**
+     * 解析「无线通讯」工作表：二维数组第 0 位为表头，其余为数据行
+     * @param {Array[]} rawRows - sheet_to_json(header:1) 得到的二维数组
+     * @returns {Object[]} 表头为 key 的对象数组
+     */
+    parseWirelessSheet(rawRows) {
+      if (!rawRows || rawRows.length === 0) return []
+      const headers = rawRows[0].map((h, i) => (h != null && String(h).trim() !== '' ? String(h).trim() : `列${i + 1}`))
+      const dataRows = rawRows.slice(1)
+      return dataRows.map((row) => {
+        const item = {}
+        headers.forEach((key, index) => {
+          item[key] = row[index] != null ? row[index] : ''
+        })
+        return item
+      })
+    },
+
     onExcelFileChange(event) {
       const file = event.target.files?.[0]
       if (!file) return
@@ -34,19 +53,25 @@ export default {
           const data = new Uint8Array(e.target.result)
           const workbook = XLSX.read(data, { type: 'array' })
 
-          console.log('========== Excel 文档内容 ==========')
-          console.log('工作簿名称:', workbook.Props?.Title || file.name)
-          console.log('工作表列表:', workbook.SheetNames)
+          const sheetName = '无线通信'
+          if (!workbook.SheetNames.includes(sheetName)) {
+            console.warn(`未找到工作表「${sheetName}」，当前工作表：`, workbook.SheetNames)
+            this.wirelessData = []
+            return
+          }
 
-          workbook.SheetNames.forEach((sheetName) => {
-            const sheet = workbook.Sheets[sheetName]
-            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
-            console.log(`\n--- 工作表: ${sheetName} ---`)
-            console.table(jsonData)
-            console.log('原始数据（二维数组）:', jsonData)
-          })
+          const sheet = workbook.Sheets[sheetName]
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
 
-          console.log('========== 读取完成 ==========')
+          // 第 0 位为表头，解析为对象数组
+          const parsed = this.parseWirelessSheet(jsonData)
+          this.wirelessData = parsed
+
+          console.log('========== 「无线通讯」解析结果 ==========')
+          // console.log('表头（第0行）:', jsonData[0])
+          console.log('解析后数据（对象数组）:', JSON.parse(JSON.stringify(parsed)))
+          // console.table(parsed)
+          // console.log('========== 解析完成 ==========')
         } catch (err) {
           console.error('读取 Excel 失败:', err)
         }
