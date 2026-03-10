@@ -1,9 +1,29 @@
 <template>
   <div id="app">
+    <!-- 首页 -->
+    <div class="page marginB-16">
+      <img src="../assets/resources/images/home.jpg" alt="" />
+    </div>
+
+    <!-- 介绍页 -->
+    <div class="page marginB-16">
+      <img src="../assets/resources/images/home2.jpg" alt="" />
+    </div>
+
+    <!-- 目录页 -->
+    <div class="page marginB-16">
+      <img src="../assets/resources/images/catalog.png" alt="" />
+    </div>
+
     <div class="excel-upload">
       <label class="upload-label">
         <span>上传 Excel 文件</span>
-        <input type="file" accept=".xlsx,.xls" @change="onExcelFileChange" class="upload-input" />
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          @change="onExcelFileChange"
+          class="upload-input"
+        />
       </label>
       <p v-if="fileName" class="file-name">已选择：{{ fileName }}</p>
     </div>
@@ -11,16 +31,14 @@
 </template>
 
 <script>
-import * as XLSX from 'xlsx'
+import * as XLSX from "xlsx";
 
 export default {
-  name: 'App',
-  components: {},
   data() {
     return {
-      fileName: '',
-      wirelessData: [] // 解析后的「无线通讯」数据（对象数组）
-    }
+      fileName: "",
+      wirelessData: [], // 解析后的「无线通讯」数据（对象数组）
+    };
   },
   methods: {
     /**
@@ -29,69 +47,97 @@ export default {
      * @returns {Object[]} 表头为 key 的对象数组
      */
     parseWirelessSheet(rawRows) {
-      if (!rawRows || rawRows.length === 0) return []
-      const headers = rawRows[0].map((h, i) => (h != null && String(h).trim() !== '' ? String(h).trim() : `列${i + 1}`))
-      const dataRows = rawRows.slice(1)
+      if (!rawRows || rawRows.length === 0) return [];
+      const headers = rawRows[0].map((h, i) =>
+        h != null && String(h).trim() !== "" ? String(h).trim() : `列${i + 1}`,
+      );
+      const dataRows = rawRows.slice(1);
       return dataRows.map((row) => {
-        const item = {}
+        const item = {};
         headers.forEach((key, index) => {
-          item[key] = row[index] != null ? row[index] : ''
-        })
-        return item
-      })
+          item[key] = row[index] != null ? row[index] : "";
+        });
+        return item;
+      });
     },
 
     onExcelFileChange(event) {
-      const file = event.target.files?.[0]
-      if (!file) return
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-      this.fileName = file.name
-      const reader = new FileReader()
+      this.fileName = file.name;
+      const reader = new FileReader();
 
       reader.onload = (e) => {
         try {
-          const data = new Uint8Array(e.target.result)
-          const workbook = XLSX.read(data, { type: 'array' })
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
 
-          const sheetName = '无线通信'
+          const sheetName = "无线通信";
           if (!workbook.SheetNames.includes(sheetName)) {
-            console.warn(`未找到工作表「${sheetName}」，当前工作表：`, workbook.SheetNames)
-            this.wirelessData = []
-            return
+            console.warn(
+              `未找到工作表「${sheetName}」，当前工作表：`,
+              workbook.SheetNames,
+            );
+            this.wirelessData = [];
+            return;
           }
 
-          const sheet = workbook.Sheets[sheetName]
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            defval: "",
+          });
 
           // 第 0 位为表头，解析为对象数组
-          const parsed = this.parseWirelessSheet(jsonData)
-          this.wirelessData = parsed
+          const parsed = this.parseWirelessSheet(jsonData);
+          this.wirelessData = parsed;
 
-          console.log('========== 「无线通讯」解析结果 ==========')
+          console.log("========== 「无线通讯」解析结果 ==========");
           // console.log('表头（第0行）:', jsonData[0])
-          console.log('解析后数据（对象数组）:', JSON.parse(JSON.stringify(parsed)))
+          console.log(
+            "解析后数据（对象数组）:",
+            JSON.parse(JSON.stringify(parsed)),
+          );
           // console.table(parsed)
           // console.log('========== 解析完成 ==========')
         } catch (err) {
-          console.error('读取 Excel 失败:', err)
+          console.error("读取 Excel 失败:", err);
         }
-      }
+      };
 
-      reader.readAsArrayBuffer(file)
-      event.target.value = ''
-    }
-  }
-}
+      reader.readAsArrayBuffer(file);
+      event.target.value = "";
+    },
+  },
+};
 </script>
 
-<style>
+<style lang="scss" scoped>
+.page {
+  width: 1240px;
+  height: 842px;
+  margin: 0 auto;
+  img {
+    width: 100%;
+    height: 100%;
+  }
+  background-color: #fff;
+}
+// 首页
+.home {
+}
+// 介绍页
+.introduce {
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
+  background-color: #ccc;
   color: #2c3e50;
-  margin-top: 60px;
 }
 
 .excel-upload {
@@ -122,4 +168,3 @@ export default {
   color: #666;
 }
 </style>
-
